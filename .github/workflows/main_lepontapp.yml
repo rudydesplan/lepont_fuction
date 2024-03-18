@@ -69,7 +69,7 @@ jobs:
         with:
           app-name: 'LePontApp'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: './LePontApp'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_397292A6CCD44BA2A0CC9CDB894A4A6B }}
           scm-do-build-during-deployment: true
           enable-oryx-build: true
