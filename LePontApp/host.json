@@ -1,5 +1,5 @@
 {
-  "version": "4.30.0.0",
+  "version": "2.314.1",
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
