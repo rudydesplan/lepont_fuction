@@ -70,9 +70,14 @@ def main_logic(req: func.HttpRequest) -> func.HttpResponse:
         serialized_data = json.dumps(req_body)
         blob_client.upload_blob(serialized_data, overwrite=True)
 
+        while not blob_client.exists():
+                time.sleep(2)
+
+        logging.info(f"Blob {blob_name} uploaded successfully.")
+
         # Chemin complet du blob dans le conteneur
-        blob_path = f"{container_name}/{blob_name}"
-        trigger_response = trigger_databricks_job(f"dbfs:/mnt/{blob_path}")
+        dbfs_blob_path = f"dbfs:/mnt/{container_name}/{blob_name}"
+        trigger_response = trigger_databricks_job(dbfs_blob_path)
         logging.info(f"Databricks job triggered: {trigger_response}")
 
         return func.HttpResponse(serialized_data, status_code=200)
