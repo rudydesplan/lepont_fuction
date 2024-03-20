@@ -51,6 +51,10 @@ def main_logic(req: func.HttpRequest) -> func.HttpResponse:
             # Si une exception est levée, le blob n'existe probablement pas
             logging.info("Blob does not exist, proceeding with the original name.")
 
+        # Ajouter les clés 'id' et 'date_creation' au dictionnaire req_body
+        req_body['id'] = unique_id
+        req_body['date_creation'] = date_time_for_name
+
         # Sérialiser les données en JSON pour le stockage
         serialized_data = json.dumps(req_body)
 
