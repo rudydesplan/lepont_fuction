@@ -12,8 +12,11 @@ def trigger_databricks_job(blob_path):
     databricks_token = os.getenv('DATABRICKS_TOKEN')
     job_id = os.getenv('DATABRICKS_JOB_ID')
 
+    # Générer un token d'idempotence
+    idempotency_token = str(uuid.uuid4())
+
     # URL de l'API pour déclencher un job
-    url = f'https://{databricks_domain}/api/2.0/jobs/run-now'
+    url = f'https://{databricks_domain}/api/2.1/jobs/run-now'
 
     headers = {
         'Authorization': f'Bearer {databricks_token}',
@@ -21,7 +24,8 @@ def trigger_databricks_job(blob_path):
     }
 
     payload = {
-        'job_id': job_id,
+        'job_id': int(job_id),
+        'idempotency_token': idempotency_token,
         'notebook_params': {
             'json_blob_path': blob_path  # Paramètre passé au notebook Databricks
         }
