@@ -5,61 +5,71 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from datetime import datetime
 import uuid
 import os
+import requests  # Assurez-vous que requests est inclus dans votre environnement Azure Function
 
-def main_logic(req: func.HttpRequest) -> func.HttpResponse:
-    # Configuration du service Blob Storage
+def trigger_databricks_job(blob_path):
+    databricks_domain = os.getenv('DATABRICKS_DOMAIN')
+    databricks_token = os.getenv('DATABRICKS_TOKEN')
+    job_id = os.getenv('DATABRICKS_JOB_ID')
+
+    # URL de l'API pour déclencher un job
+    url = f'https://{databricks_domain}/api/2.0/jobs/run-now'
+
+    headers = {
+        'Authorization': f'Bearer {databricks_token}',
+        'Content-Type': 'application/json'
+    }
+
+    payload = {
+        'job_id': job_id,
+        'notebook_params': {
+            'json_blob_path': blob_path  # Paramètre passé au notebook Databricks
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    return response.json()
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Azure HTTP trigger function processed a request.')
+
     connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-    container_name = "landing"  # Nom du conteneur pour les fichiers d'arrivée
+    container_name = "landing"
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
     container_client = blob_service_client.get_container_client(container_name)
 
     try:
-        # Récupérer les données JSON de la requête
         req_body = req.get_json()
     except ValueError:
         return func.HttpResponse("Invalid JSON", status_code=400)
 
     if req_body:
-        logging.info("Received data: {}".format(req_body))
-        
-        # Obtenir la date et l'heure actuelle
         date_time_now = datetime.now()
-        
-        # Format de la date et heure pour le nommage des dossiers
         date_folder = date_time_now.strftime("%Y-%m-%d")
-        
-        # Générer un identifiant unique (UUID) pour le nom initial du blob
         unique_id = str(uuid.uuid4())
-        
-        # Format de la date et heure pour le nom du fichier, selon le format spécifié
         date_time_for_name = date_time_now.strftime("%Y_%m_%d_%H_%M_%S")
-        
-        # Créer un nom initial pour le Blob en utilisant l'UUID et la date de création
         blob_name = f"{date_folder}/formulaire_{date_time_for_name}_{unique_id}.json"
-        
-        # Créer le blob client pour vérifier l'existence du blob
+
         blob_client = container_client.get_blob_client(blob_name)
 
-        # Tenter de récupérer les propriétés du blob pour voir s'il existe déjà
         try:
             blob_client.get_blob_properties()
-            # Si aucune exception n'est levée, le blob existe déjà, donc générer un nouvel UUID
-            unique_id = str(uuid.uuid4())  # Générer un nouvel UUID
+            unique_id = str(uuid.uuid4())
             blob_name = f"{date_folder}/formulaire_{unique_id}_{date_time_for_name}.json"
             blob_client = container_client.get_blob_client(blob_name)
         except Exception as e:
-            # Si une exception est levée, le blob n'existe probablement pas
             logging.info("Blob does not exist, proceeding with the original name.")
 
-        # Ajouter les clés 'id' et 'date_creation' au dictionnaire req_body
         req_body['id'] = unique_id
         req_body['date_creation'] = date_time_for_name
 
-        # Sérialiser les données en JSON pour le stockage
         serialized_data = json.dumps(req_body)
-
-        # Uploader les données dans le blob
         blob_client.upload_blob(serialized_data, overwrite=True)
+
+        # Chemin complet du blob dans le conteneur
+        blob_path = f"{container_name}/{blob_name}"
+        trigger_response = trigger_databricks_job(f"dbfs:/mnt/{blob_path}")
+        logging.info(f"Databricks job triggered: {trigger_response}")
 
         return func.HttpResponse(serialized_data, status_code=200)
     else:
