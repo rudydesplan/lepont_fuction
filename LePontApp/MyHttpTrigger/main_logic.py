@@ -75,9 +75,12 @@ def main_logic(req: func.HttpRequest) -> func.HttpResponse:
 
         logging.info(f"Blob {blob_name} uploaded successfully.")
 
-        # Chemin complet du blob dans le conteneur
-        dbfs_blob_path = f"dbfs:/mnt/{container_name}/{blob_name}"
-        trigger_response = trigger_databricks_job(dbfs_blob_path)
+        # Chemin de base pour les blobs dans le conteneur
+        wasbs_path_prefix = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net"
+        
+        # Chemin complet du blob dans le conteneur, utilisant le chemin WASBS
+        blob_wasbs_path = f"{wasbs_path_prefix}/{blob_name}"
+        trigger_response = trigger_databricks_job(blob_wasbs_path)
         logging.info(f"Databricks job triggered: {trigger_response}")
 
         return func.HttpResponse(serialized_data, status_code=200)
