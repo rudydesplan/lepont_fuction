@@ -30,7 +30,7 @@ def trigger_databricks_job(id_to_delete):
     response = requests.post(url, headers=headers, json=payload)
     return response.json()
 
-def main(req: func.HttpRequest) -> func.HttpResponse:
+def main_logic(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Azure HTTP trigger function processed a request to trigger a Databricks job.')
 
     try:
