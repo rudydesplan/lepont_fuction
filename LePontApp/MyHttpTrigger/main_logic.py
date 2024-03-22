@@ -10,7 +10,7 @@ import requests  # Assurez-vous que requests est inclus dans votre environnement
 def trigger_databricks_job(blob_path):
     databricks_domain = os.getenv('DATABRICKS_DOMAIN')
     databricks_token = os.getenv('DATABRICKS_TOKEN')
-    job_id = os.getenv('DATABRICKS_JOB_ID')
+    job_id = os.getenv('DATABRICKS_JOB_ID_ADD')
 
     # Générer un token d'idempotence
     idempotency_token = str(uuid.uuid4())
